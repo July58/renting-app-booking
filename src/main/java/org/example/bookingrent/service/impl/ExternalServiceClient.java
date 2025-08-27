@@ -3,15 +3,26 @@ package org.example.bookingrent.service.impl;
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
+import io.dapr.utils.TypeRef;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.example.bookingrent.dto.RentItem;
+import org.example.bookingrent.req_res.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Service
 public class ExternalServiceClient {
 
     private final DaprClient daprClient;
+    private static final Logger logger = LoggerFactory.getLogger("GLOBAL_LOGGER");
 
     public ExternalServiceClient(DaprClient daprClient) {
         this.daprClient = daprClient;
@@ -20,51 +31,53 @@ public class ExternalServiceClient {
     /**
      * Check availability of an item.
      */
-    @CircuitBreaker(name = "catalogServiceCB", fallbackMethod = "checkAvailabilityFallback")
+    @CircuitBreaker(name = "rentable-service", fallbackMethod = "checkAvailabilityFallback")
     public RentItem checkAvailability(String itemId, int requestedAmount) {
 
-        return daprClient.invokeMethod(
+        logger.debug("reserveItem called with itemId: {}, quantity: {}", itemId, requestedAmount);
+
+        ApiResponse<RentItem> item = daprClient.invokeMethod(
                 "rentable-service",
                 "api/rent/" + itemId,
                 null,
                 HttpExtension.GET,
-                RentItem.class
+                getAuthHeadersFromPrincipal(),
+                new TypeRef<ApiResponse<RentItem>>() {}
         ).block();
+
+        logger.info("Fetched item: {}", item);
+
+        if (item == null || item.getData().getAmountOfCurrent() < requestedAmount) {
+            logger.warn("Item is null or not enough quantity. Returning false");
+            return null;
+        }
+
+        return item.getData();
     }
 
     public boolean checkAvailabilityFallback(String itemId, int requestedAmount, Throwable throwable) {
-        System.err.println("CatalogService unavailable (availability check): " + throwable.getMessage());
+        logger.error("CatalogService unavailable (availability check): {}", throwable.getMessage());
         return false;
     }
 
     /**
      * Reserve item by updating amount_of_objects.
      */
-    @CircuitBreaker(name = "catalogServiceCB", fallbackMethod = "reserveItemFallback")
-    public boolean reserveItem(String itemId, int quantity) {
-
-        RentItem item = daprClient.invokeMethod(
-                "rentable-service",
-                "api/rent/" + itemId,
-                null,
-                HttpExtension.PUT,
-                RentItem.class
-        ).block();
-
-        if (item == null || item.getAmountOfCurrent() < quantity) {
-            return false;
-        }
-
+    @CircuitBreaker(name = "rentable-service", fallbackMethod = "reserveItemFallback")
+    public boolean reserveItem(RentItem item, int quantity) {
 
         item.setAmountOfCurrent(item.getAmountOfCurrent() - quantity);
 
         RentItem updated = daprClient.invokeMethod(
-                "catalog-service",
-                "api/rent/" + itemId,
+                "rentable-service",
+                "api/rent/" + item.getId(),
                 item,
                 HttpExtension.PUT,
+                getAuthHeadersFromPrincipal(),
                 RentItem.class
         ).block();
+
+        logger.info("Updated item: {}", updated);
 
         return updated != null;
     }
@@ -74,5 +87,18 @@ public class ExternalServiceClient {
         return false;
     }
 
+    private Map<String, String> getAuthHeadersFromPrincipal() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, String> headers = new HashMap<>();
 
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = authentication.getCredentials().toString(); // Token stored in credentials
+            logger.debug("Extracted token from principal: {}", token);
+            headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        } else {
+            logger.warn("No authentication or credentials found");
+        }
+
+        return headers;
+    }
 }

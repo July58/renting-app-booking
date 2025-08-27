@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class AuthFilter extends OncePerRequestFilter {
@@ -32,42 +34,68 @@ public class AuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        if (path.startsWith("/dapr/subscribe")) {
+
+        if (request.getRequestURI().startsWith("/dapr/")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = request.getHeader(HttpHeaders.AUTHORIZATION);
+
         if (token == null || !token.startsWith("Bearer ")) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Missing or invalid Authorization header");
             return;
         }
-        token = token.substring(7);
+
 
         try {
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Authorization", token);
 
             byte[] respBytes = daprClient.invokeMethod(
                     "auth-service",
                     "api/validate-token",
-                    token,
+                    "",
                     HttpExtension.POST,
+                    headers,
                     byte[].class
             ).block();
 
+
+            if (respBytes == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+
             JsonNode body = objectMapper.readTree(respBytes);
-            JsonNode userData = body.path("data").path("user");
-            if (userData.isMissingNode()) {
-                throw new RuntimeException("Invalid token");
+
+            if (body.has("isValid") && !body.get("isValid").asBoolean()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token validation failed");
+                return;
+            }
+
+            JsonNode userData = body.has("user") ? body.get("user") :
+                    (body.has("data") && body.get("data").has("user") ? body.get("data").get("user") :
+                            body.has("principal") ? body.get("principal") : null);
+
+            if (userData == null || userData.isNull()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("User data not found in auth response");
+                return;
             }
 
 
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userData, null, List.of());
+                    new UsernamePasswordAuthenticationToken(userData, token, List.of());
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Exception during token validation: " + e.getMessage());
             return;
         }
 

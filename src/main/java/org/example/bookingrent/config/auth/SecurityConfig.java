@@ -19,7 +19,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/dapr/subscribe").permitAll()
+                        .requestMatchers("/dapr/**", "/actuator/**", "/health", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(daprAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -27,4 +27,5 @@ public class SecurityConfig {
         return http.build();
     }
 }
+
 

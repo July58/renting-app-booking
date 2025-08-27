@@ -2,6 +2,7 @@ package org.example.bookingrent.dto;
 
 import org.example.bookingrent.model.Booking;
 import org.example.bookingrent.model.BookingStatus;
+import org.example.bookingrent.req_res.BookingRequest;
 
 import java.math.BigDecimal;
 
@@ -18,5 +19,14 @@ public class BookingMapper {
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setCreatedAt(java.time.LocalDateTime.now());
         return booking;
+    }
+
+    public static BookingDto toDtoFromRequest(BookingRequest bookingRequest) {
+        BookingDto bookingDto = new BookingDto();
+        bookingDto.setProductId(bookingRequest.getProductId());
+        bookingDto.setQuantity(Integer.parseInt(bookingRequest.getQuantity()));
+        bookingDto.setFromDate(bookingRequest.getFromDate());
+        bookingDto.setToDate(bookingRequest.getToDate());
+        return bookingDto;
     }
 }

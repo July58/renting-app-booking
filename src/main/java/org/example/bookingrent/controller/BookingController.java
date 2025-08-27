@@ -1,6 +1,10 @@
 package org.example.bookingrent.controller;
 
+import jakarta.validation.Valid;
 import org.example.bookingrent.dto.BookingDto;
+import org.example.bookingrent.exception.InvalidBookingException;
+import org.example.bookingrent.model.BookingStatus;
+import org.example.bookingrent.req_res.ApiResponse;
 import org.example.bookingrent.req_res.BookingRequest;
 import org.example.bookingrent.service.BookingService;
 import org.example.bookingrent.service.impl.BookingServiceImpl;
@@ -20,16 +24,20 @@ public class BookingController {
 
 
     @PostMapping("/reserve")
-    public ResponseEntity<BookingDto> reserveItem(@RequestBody BookingRequest bookingRequest) {
-        BookingDto bookingDto = new BookingDto();
-        bookingDto.setProductId(bookingRequest.getProductId());
-        bookingDto.setQuantity(Integer.parseInt(bookingRequest.getQuantity()));
-        bookingDto.setFromDate(bookingRequest.getFromDate());
-        bookingDto.setToDate(bookingRequest.getToDate());
-        BookingDto result = bookingService.bookItem(bookingDto);
-        if (result.getStatus().equals("FAILED")) {
-            return ResponseEntity.badRequest().body(bookingDto);
+    public ResponseEntity<ApiResponse<BookingDto>> reserveItem(@Valid @RequestBody BookingRequest bookingRequest) {
+        try{
+        BookingDto bookingDto = bookingService.bookItem(bookingRequest);
+        ApiResponse<BookingDto> response = new ApiResponse<>();
+        response.setSuccess(true);
+        response.setData(bookingDto);
+        response.setMessage("Booking " + bookingDto.getStatus());
+        return ResponseEntity.ok(response);
         }
-        return ResponseEntity.ok(result);
+        catch(InvalidBookingException e){
+            ApiResponse<BookingDto> response = new ApiResponse<>();
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

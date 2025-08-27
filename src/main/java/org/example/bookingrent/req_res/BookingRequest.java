@@ -12,6 +12,7 @@ public class BookingRequest {
 
     @NotBlank(message = "Quantity is required")
     @Pattern(regexp = "\\d+", message = "Quantity must be a positive integer")
+    @Min(value = 1, message = "Quantity must be at least 1")
     private String quantity;
 
     @NotNull(message = "Start date is required")

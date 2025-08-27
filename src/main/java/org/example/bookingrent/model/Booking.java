@@ -1,9 +1,9 @@
 package org.example.bookingrent.model;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Generated;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,12 +13,15 @@ import java.time.LocalDateTime;
 @Data
 public class Booking {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
     private String productId;
     private int customerId;
     private int ownerId;
     private int quantity;
     private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
     private BookingStatus status;
     private LocalDate fromDate;
     private LocalDate toDate;

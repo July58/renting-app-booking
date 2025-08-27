@@ -12,8 +12,9 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
-    @Query("SELECT b FROM Booking b WHERE b.id = :itemId " +
-            "AND (b.fromDate <= :endDate AND b.toDate >= :startDate)")
+    @Query("SELECT b FROM Booking b WHERE b.productId = :itemId " +
+            "AND (b.fromDate <= :endDate AND b.toDate >= :startDate)"+
+            "AND b.status = 'CONFIRMED'")
     List<Booking> findOverlappingBookings(String itemId, LocalDate startDate, LocalDate endDate);
 }
 

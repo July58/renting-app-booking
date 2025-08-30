@@ -12,15 +12,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/booking")
+@RequestMapping("/bookings")
 public class BookingController {
 
     @Autowired
     private BookingService bookingService;
 
 
-    @PostMapping("/reserve")
+    @PostMapping
     public ResponseEntity<ApiResponse<BookingDto>> reserveItem(@Valid @RequestBody BookingRequest bookingRequest) {
         try{
         BookingDto bookingDto = bookingService.bookItem(bookingRequest);
@@ -49,6 +52,31 @@ public class BookingController {
             return ResponseEntity.ok(response);
         } catch (InvalidBookingException e) {
             ApiResponse<BookingDto> response = new ApiResponse<>();
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Map<String, List<BookingDto>>>> getBookings() {
+        ApiResponse<Map<String, List<BookingDto>>> response = new ApiResponse<>();
+        response.setSuccess(true);
+        response.setData(bookingService.getBookingsByUser());
+        response.setMessage("Fetched bookings successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<BookingDto>> getBooking(@PathVariable Long id) {
+        ApiResponse<BookingDto> response = new ApiResponse<>();
+        try {
+            BookingDto bookingDto = bookingService.getBooking(id);
+            response.setSuccess(true);
+            response.setData(bookingDto);
+            response.setMessage("Fetched booking successfully");
+            return ResponseEntity.ok(response);
+        } catch (InvalidBookingException e) {
             response.setSuccess(false);
             response.setMessage(e.getMessage());
             return ResponseEntity.badRequest().body(response);

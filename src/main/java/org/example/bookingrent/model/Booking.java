@@ -17,8 +17,8 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String productId;
-    private Integer customerId;
-    private Integer ownerId;
+    private Long customerId;
+    private Long ownerId;
     private Integer quantity;
     private BigDecimal price;
 

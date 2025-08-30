@@ -21,5 +21,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 //    List<Booking> findOverlappingBookings(String itemId, LocalDate startDate, LocalDate endDate);
 
     List<Booking> findByStatusAndToDateBefore(BookingStatus status, LocalDate toDateBefore);
+    List<Booking> findByCustomerId(Long ownerId);
 }
 

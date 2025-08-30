@@ -10,8 +10,8 @@ public class BookingMapper {
     public static Booking toEntity(BookingDto dto) {
         Booking booking = new Booking();
         booking.setProductId(dto.getProductId());
-        booking.setCustomerId(Integer.parseInt(dto.getCustomerId()));
-        booking.setOwnerId(Integer.parseInt(dto.getOwnerId()));
+        booking.setCustomerId(Long.parseLong(dto.getCustomerId()));
+        booking.setOwnerId(Long.parseLong(dto.getOwnerId()));
         booking.setQuantity(dto.getQuantity());
         booking.setPrice(dto.getPrice());
         booking.setFromDate(dto.getFromDate());

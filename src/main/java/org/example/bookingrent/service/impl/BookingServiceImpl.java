@@ -22,7 +22,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -47,8 +50,9 @@ public class BookingServiceImpl implements BookingService {
                 bookingRequest.getProductId(), bookingRequest.getQuantity());
 
         BookingDto bookingDto = BookingMapper.toDtoFromRequest(bookingRequest);
-
-        setCustomerFromAuth(bookingDto);
+        String customerId = getCustomerFromAuth();
+        bookingDto.setCustomerId(customerId);
+        logger.trace("Customer set from authentication: {}", customerId);
         logger.debug("BookingDto after setting customer: {}", bookingDto);
 
         RentItem rentItem = checkItemAvailability(bookingDto);
@@ -145,11 +149,52 @@ public class BookingServiceImpl implements BookingService {
         }}
     }
 
-    private void setCustomerFromAuth(BookingDto bookingDto) {
+    @Override
+    public Map<String, List<BookingDto>> getBookingsByUser() {
+        String userId = getCustomerFromAuth();
+        List<Booking> allBookings = bookingRepository.findByCustomerId(Long.parseLong(userId));
+        List<BookingDto> past = new ArrayList<>();
+        List<BookingDto> current = new ArrayList<>();
+        List<BookingDto> future = new ArrayList<>();
+
+        LocalDate now = LocalDate.now();
+
+        for (Booking b : allBookings) {
+            BookingDto bookingDto = BookingMapper.toDto(b);
+            if (b.getToDate().isBefore(now)) {
+                past.add(bookingDto);
+            } else if (b.getFromDate().isAfter(now)) {
+                future.add(bookingDto);
+            } else {
+                current.add(bookingDto);
+            }
+        }
+
+        Map<String, List<BookingDto>> result = new HashMap<>();
+        result.put("past", past);
+        result.put("current", current);
+        result.put("future", future);
+
+        return result;
+    }
+
+    @Override
+    public BookingDto getBooking(Long bookingId) throws InvalidBookingException {
+        if(bookingId == null || bookingId <= 0) {
+            logger.warn("Invalid bookingId provided for retrieval: {}", bookingId);
+            throw new InvalidBookingException("Invalid booking ID");
+        }
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking != null) {
+            return BookingMapper.toDto(booking);
+        }
+        logger.warn("Booking not found with bookingId={}", bookingId);
+        throw new InvalidBookingException("Booking not found");
+    }
+
+    private String getCustomerFromAuth() {
         JsonNode userData = (JsonNode) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String customerId = userData.path("id").asText();
-        bookingDto.setCustomerId(customerId);
-        logger.trace("Customer set from authentication: {}", customerId);
+        return userData.path("id").asText();
     }
 
     private RentItem checkItemAvailability(BookingDto bookingDto) throws InvalidBookingException {

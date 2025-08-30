@@ -1,5 +1,6 @@
 package org.example.bookingrent.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,6 +14,8 @@ public class BookingDto {
     private int quantity;
     private BigDecimal price;
     private String status;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fromDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate toDate;
 }

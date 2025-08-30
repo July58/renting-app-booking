@@ -29,4 +29,17 @@ public class BookingMapper {
         bookingDto.setToDate(bookingRequest.getToDate());
         return bookingDto;
     }
+
+    public static BookingDto toDto(Booking booking) {
+        BookingDto bookingDto = new BookingDto();
+        bookingDto.setProductId(booking.getProductId());
+        bookingDto.setCustomerId(String.valueOf(booking.getCustomerId()));
+        bookingDto.setOwnerId(String.valueOf(booking.getOwnerId()));
+        bookingDto.setQuantity(booking.getQuantity());
+        bookingDto.setPrice(booking.getPrice());
+        bookingDto.setFromDate(booking.getFromDate());
+        bookingDto.setToDate(booking.getToDate());
+        bookingDto.setStatus(booking.getStatus().toString());
+        return bookingDto;
+    }
 }

@@ -10,10 +10,7 @@ import org.example.bookingrent.service.BookingService;
 import org.example.bookingrent.service.impl.BookingServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/booking")
@@ -34,6 +31,23 @@ public class BookingController {
         return ResponseEntity.ok(response);
         }
         catch(InvalidBookingException e){
+            ApiResponse<BookingDto> response = new ApiResponse<>();
+            response.setSuccess(false);
+            response.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<BookingDto>> cancelBooking(@PathVariable Long id) {
+        try {
+            BookingDto bookingDto = bookingService.cancelBooking(id);
+            ApiResponse<BookingDto> response = new ApiResponse<>();
+            response.setSuccess(true);
+            response.setData(bookingDto);
+            response.setMessage("Booking cancelled successfully");
+            return ResponseEntity.ok(response);
+        } catch (InvalidBookingException e) {
             ApiResponse<BookingDto> response = new ApiResponse<>();
             response.setSuccess(false);
             response.setMessage(e.getMessage());

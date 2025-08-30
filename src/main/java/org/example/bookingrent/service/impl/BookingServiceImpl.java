@@ -10,14 +10,19 @@ import org.example.bookingrent.model.Booking;
 import org.example.bookingrent.model.BookingStatus;
 import org.example.bookingrent.pricing.PricingStrategy;
 import org.example.bookingrent.repository.BookingRepository;
+import org.example.bookingrent.req_res.BookingCancelPub;
 import org.example.bookingrent.req_res.BookingRequest;
 import org.example.bookingrent.service.BookingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Service
@@ -54,12 +59,6 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidBookingException("Item not available: booked quantity exceeds available stock");
         }
 
-        if(!bookingRepository.findOverlappingBookings(rentItem.getId(), bookingDto.getFromDate(), bookingDto.getToDate()).isEmpty()) {
-            bookingDto.setStatus(BookingStatus.FAILED.toString());
-            logger.warn("Item already booked for productId={} in the requested date range",
-                    bookingDto.getProductId());
-            throw new InvalidBookingException("Item already booked in the requested date range");
-        }
 
         BigDecimal finalPrice;
         try {
@@ -99,6 +98,53 @@ public class BookingServiceImpl implements BookingService {
         return bookingDto;
     }
 
+    @Override
+    public BookingDto cancelBooking(Long bookingId) throws InvalidBookingException {
+        if(bookingId == null || bookingId <= 0) {
+            logger.warn("Invalid bookingId provided for cancellation: {}", bookingId);
+            throw new InvalidBookingException("Invalid booking ID");
+        }
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            logger.warn("Booking not found for cancellation with bookingId={}", bookingId);
+            throw new InvalidBookingException("Booking not found");
+        }
+        if (booking.getStatus() != BookingStatus.CONFIRMED) {
+            logger.warn("Cannot cancel booking with status={} for bookingId={}", booking.getStatus(), bookingId);
+            throw new InvalidBookingException("Only confirmed bookings can be cancelled");
+        }
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setUpdatedAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+        logger.info("Booking cancelled successfully for bookingId={}", bookingId);
+        BookingCancelPub bookingCancelPub = new BookingCancelPub();
+        bookingCancelPub.setProductId(booking.getProductId());
+        bookingCancelPub.setQuantity(booking.getQuantity());
+        bookingCancelPub.setStatus(booking.getStatus().toString());
+        externalServiceClient.publishCompletedBooking(bookingCancelPub);
+        logger.info("Booking updated info was sent for bookingId={}", bookingId);
+        return BookingMapper.toDto(booking);
+    }
+
+    @Scheduled(fixedRate = 60000)
+    public void completeBookings() {
+        LocalDate now = LocalDate.now();
+        List<Booking> toComplete = bookingRepository.findByStatusAndToDateBefore(BookingStatus.CONFIRMED, now);
+        if(!toComplete.isEmpty()) {
+        for (Booking booking : toComplete) {
+            BookingCancelPub bookingCancelPub = new BookingCancelPub();
+            bookingCancelPub.setProductId(booking.getProductId());
+            bookingCancelPub.setQuantity(booking.getQuantity());
+            bookingCancelPub.setStatus(booking.getStatus().toString());
+            externalServiceClient.publishCompletedBooking(bookingCancelPub);
+            logger.info("Published completed booking event for bookingId={}", booking.getId());
+            booking.setUpdatedAt(LocalDateTime.now());
+            booking.setStatus(BookingStatus.COMPLETED);
+            bookingRepository.save(booking);
+            logger.info("Booking updated to complete successfully: {}", booking);
+        }}
+    }
+
     private void setCustomerFromAuth(BookingDto bookingDto) {
         JsonNode userData = (JsonNode) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String customerId = userData.path("id").asText();
@@ -106,14 +152,22 @@ public class BookingServiceImpl implements BookingService {
         logger.trace("Customer set from authentication: {}", customerId);
     }
 
-    private RentItem checkItemAvailability(BookingDto bookingDto) {
-        RentItem item = externalServiceClient.checkAvailability(
-                bookingDto.getProductId(),
-                bookingDto.getQuantity()
-        );
-        if (item != null) {
-            logger.debug("Item available: {}", item);
+    private RentItem checkItemAvailability(BookingDto bookingDto) throws InvalidBookingException {
+        RentItem item = null;
+        try {
+           item = externalServiceClient.checkAvailability(
+                    bookingDto.getProductId(),
+                    bookingDto.getQuantity()
+            );
+            if (item != null) {
+                logger.debug("Item available: {}", item);
+            }
+
+        }catch (io.dapr.exceptions.DaprException e) {
+            logger.error("Product not found in external service: {}", bookingDto.getProductId(), e);
+            throw new InvalidBookingException("Product not found: " + bookingDto.getProductId());
         }
+
         return item;
     }
 

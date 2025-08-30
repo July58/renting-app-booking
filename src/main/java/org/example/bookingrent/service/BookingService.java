@@ -9,4 +9,5 @@ import org.springframework.stereotype.Service;
 
 public interface BookingService {
     BookingDto bookItem(BookingRequest bookingDto) throws InvalidBookingException;
+    BookingDto cancelBooking(Long bookingId) throws InvalidBookingException;
 }

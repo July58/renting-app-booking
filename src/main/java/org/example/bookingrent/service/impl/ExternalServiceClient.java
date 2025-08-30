@@ -5,8 +5,11 @@ import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.utils.TypeRef;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import org.example.bookingrent.dto.BookingDto;
 import org.example.bookingrent.dto.RentItem;
+import org.example.bookingrent.model.Booking;
 import org.example.bookingrent.req_res.ApiResponse;
+import org.example.bookingrent.req_res.BookingCancelPub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -92,7 +95,7 @@ public class ExternalServiceClient {
         Map<String, String> headers = new HashMap<>();
 
         if (authentication != null && authentication.getCredentials() != null) {
-            String token = authentication.getCredentials().toString(); // Token stored in credentials
+            String token = authentication.getCredentials().toString();
             logger.debug("Extracted token from principal: {}", token);
             headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
         } else {
@@ -100,5 +103,9 @@ public class ExternalServiceClient {
         }
 
         return headers;
+    }
+
+    public void publishCompletedBooking(BookingCancelPub booking) {
+        daprClient.publishEvent("pubsub", "completed-bookings", booking).block();
     }
 }

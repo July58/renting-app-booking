@@ -4,6 +4,7 @@ package org.example.bookingrent.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Generated;
+import org.springframework.data.relational.core.sql.In;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,11 +15,11 @@ import java.time.LocalDateTime;
 public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
+    private Long id;
     private String productId;
-    private int customerId;
-    private int ownerId;
-    private int quantity;
+    private Integer customerId;
+    private Integer ownerId;
+    private Integer quantity;
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)

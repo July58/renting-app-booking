@@ -2,6 +2,7 @@ package org.example.bookingrent.service.impl;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.EntityNotFoundException;
 import org.example.bookingrent.dto.BookingDto;
 import org.example.bookingrent.dto.BookingMapper;
 import org.example.bookingrent.dto.RentItem;
@@ -34,7 +35,7 @@ public class BookingServiceImpl implements BookingService {
     private final ExternalServiceClient externalServiceClient;
     private final BookingRepository bookingRepository;
     private final PricingStrategy pricingStrategy;
-    private static final Logger logger = LoggerFactory.getLogger("GLOBAL_LOGGER");
+    private static final Logger logger = LoggerFactory.getLogger(BookingServiceImpl.class);
 
     public BookingServiceImpl(ExternalServiceClient externalServiceClient,
                               BookingRepository bookingRepository,
@@ -106,12 +107,12 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto cancelBooking(Long bookingId) throws InvalidBookingException {
         if(bookingId == null || bookingId <= 0) {
             logger.warn("Invalid bookingId provided for cancellation: {}", bookingId);
-            throw new InvalidBookingException("Invalid booking ID");
+            throw new IllegalArgumentException("Invalid bookingId provided");
         }
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking == null) {
             logger.warn("Booking not found for cancellation with bookingId={}", bookingId);
-            throw new InvalidBookingException("Booking not found");
+            throw new EntityNotFoundException("Booking not found");
         }
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             logger.warn("Cannot cancel booking with status={} for bookingId={}", booking.getStatus(), bookingId);
@@ -182,7 +183,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingDto getBooking(Long bookingId) throws InvalidBookingException {
         if(bookingId == null || bookingId <= 0) {
             logger.warn("Invalid bookingId provided for retrieval: {}", bookingId);
-            throw new InvalidBookingException("Invalid booking ID");
+            throw new IllegalArgumentException("Invalid booking ID");
         }
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking != null) {

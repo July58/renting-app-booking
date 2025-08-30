@@ -25,7 +25,7 @@ import java.util.Map;
 public class ExternalServiceClient {
 
     private final DaprClient daprClient;
-    private static final Logger logger = LoggerFactory.getLogger("GLOBAL_LOGGER");
+    private static final Logger logger = LoggerFactory.getLogger(ExternalServiceClient.class);
 
     public ExternalServiceClient(DaprClient daprClient) {
         this.daprClient = daprClient;

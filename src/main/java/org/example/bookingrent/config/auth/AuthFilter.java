@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.bookingrent.req_res.ApiResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -95,7 +96,12 @@ public class AuthFilter extends OncePerRequestFilter {
 
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Exception during token validation: " + e.getMessage());
+            ApiResponse<Void> apiResponse = new ApiResponse<>();
+            apiResponse.setSuccess(false);
+            apiResponse.setMessage("Authentication service is unavailable");
+            apiResponse.setData(null);
+            String jsonResponse = objectMapper.writeValueAsString(apiResponse);
+            response.getWriter().write(jsonResponse);
             return;
         }
 

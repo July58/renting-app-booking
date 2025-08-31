@@ -58,9 +58,9 @@ public class ExternalServiceClient {
         return item.getData();
     }
 
-    public boolean checkAvailabilityFallback(String itemId, int requestedAmount, Throwable throwable) {
+    public RentItem checkAvailabilityFallback(String itemId, int requestedAmount, Throwable throwable) {
         logger.error("CatalogService unavailable (availability check): {}", throwable.getMessage());
-        return false;
+        return null;
     }
 
     /**
@@ -85,8 +85,8 @@ public class ExternalServiceClient {
         return updated != null;
     }
 
-    public boolean reserveItemFallback(String itemId, int quantity, Throwable throwable) {
-        System.err.println("CatalogService unavailable (reserveItem): " + throwable.getMessage());
+    public boolean reserveItemFallback(RentItem item, int quantity, Throwable throwable) {
+        logger.error("CatalogService unavailable (reserveItem): {}", throwable.getMessage());
         return false;
     }
 

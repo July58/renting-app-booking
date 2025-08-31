@@ -2,6 +2,9 @@ package org.example.bookingrent.service.impl;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.dapr.exceptions.DaprException;
+import io.dapr.internal.exceptions.DaprHttpException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.persistence.EntityNotFoundException;
 import org.example.bookingrent.dto.BookingDto;
 import org.example.bookingrent.dto.BookingMapper;
@@ -198,20 +201,15 @@ public class BookingServiceImpl implements BookingService {
         return userData.path("id").asText();
     }
 
-    private RentItem checkItemAvailability(BookingDto bookingDto) throws InvalidBookingException {
-        RentItem item = null;
-        try {
-           item = externalServiceClient.checkAvailability(
-                    bookingDto.getProductId(),
-                    bookingDto.getQuantity()
-            );
-            if (item != null) {
-                logger.debug("Item available: {}", item);
-            }
 
-        }catch (io.dapr.exceptions.DaprException e) {
-            logger.error("Product not found in external service: {}", bookingDto.getProductId(), e);
-            throw new InvalidBookingException("Product not found: " + bookingDto.getProductId());
+    public RentItem checkItemAvailability(BookingDto bookingDto)  {
+        RentItem item = externalServiceClient.checkAvailability(
+                bookingDto.getProductId(),
+                bookingDto.getQuantity()
+        );
+
+        if (item != null) {
+            logger.debug("Item available: {}", item);
         }
 
         return item;

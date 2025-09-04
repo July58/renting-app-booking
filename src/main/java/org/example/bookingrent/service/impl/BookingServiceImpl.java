@@ -2,9 +2,6 @@ package org.example.bookingrent.service.impl;
 
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.dapr.exceptions.DaprException;
-import io.dapr.internal.exceptions.DaprHttpException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.persistence.EntityNotFoundException;
 import org.example.bookingrent.dto.BookingDto;
 import org.example.bookingrent.dto.BookingMapper;
@@ -17,6 +14,7 @@ import org.example.bookingrent.repository.BookingRepository;
 import org.example.bookingrent.req_res.BookingCancelPub;
 import org.example.bookingrent.req_res.BookingRequest;
 import org.example.bookingrent.service.BookingService;
+import org.example.bookingrent.service.ExternalServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -84,7 +82,7 @@ public class BookingServiceImpl implements BookingService {
             bookingDto.setStatus(BookingStatus.FAILED.toString());
             logger.warn("Failed to reserve item for productId={} quantity={}",
                     bookingDto.getProductId(), bookingDto.getQuantity());
-            return bookingDto;
+            throw new InvalidBookingException("Failed to reserve item");
         }
 
         bookingDto.setOwnerId(String.valueOf(rentItem.getUserId()));

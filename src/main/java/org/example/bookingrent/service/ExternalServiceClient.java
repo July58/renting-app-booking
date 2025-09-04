@@ -1,13 +1,11 @@
-package org.example.bookingrent.service.impl;
+package org.example.bookingrent.service;
 
 
 import io.dapr.client.DaprClient;
 import io.dapr.client.domain.HttpExtension;
 import io.dapr.utils.TypeRef;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import org.example.bookingrent.dto.BookingDto;
 import org.example.bookingrent.dto.RentItem;
-import org.example.bookingrent.model.Booking;
 import org.example.bookingrent.req_res.ApiResponse;
 import org.example.bookingrent.req_res.BookingCancelPub;
 import org.slf4j.Logger;
@@ -59,7 +57,7 @@ public class ExternalServiceClient {
     }
 
     public RentItem checkAvailabilityFallback(String itemId, int requestedAmount, Throwable throwable) {
-        logger.error("CatalogService unavailable (availability check): {}", throwable.getMessage());
+        logger.error("Rentable-Service unavailable (availability check): {}", throwable.getMessage());
         return null;
     }
 
@@ -86,7 +84,7 @@ public class ExternalServiceClient {
     }
 
     public boolean reserveItemFallback(RentItem item, int quantity, Throwable throwable) {
-        logger.error("CatalogService unavailable (reserveItem): {}", throwable.getMessage());
+        logger.error("Rentable-service unavailable (reserveItem): {}", throwable.getMessage());
         return false;
     }
 
@@ -107,5 +105,6 @@ public class ExternalServiceClient {
 
     public void publishCompletedBooking(BookingCancelPub booking) {
         daprClient.publishEvent("pubsub", "completed-bookings", booking).block();
+        logger.info("Published completed booking event: {}", booking);
     }
 }

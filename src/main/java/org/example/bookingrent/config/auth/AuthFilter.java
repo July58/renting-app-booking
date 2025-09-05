@@ -107,4 +107,16 @@ public class AuthFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/swagger-ui")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/dapr/")
+                || path.startsWith("/actuator/health")
+                || path.startsWith("/actuator/info")
+                || path.startsWith("/actuator/metrics")
+                || path.startsWith("/actuator/loggers");
+    }
 }

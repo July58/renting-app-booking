@@ -19,7 +19,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/dapr/**", "/actuator/**", "/health", "/error").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/",
+                                "/v3/api-docs/**",
+                                "/dapr/**",
+                                "/actuator/**",
+                                "/health",
+                                "/error"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(daprAuthFilter, UsernamePasswordAuthenticationFilter.class);

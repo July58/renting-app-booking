@@ -21,7 +21,7 @@ build_job:
 # Step 2: Test
 test_job:
   stage: test
-  image: maven:3.9.3-eclipse-temurin-21
+  image: maven:3.9.4-eclipse-temurin-21-alpine
   script:
     - echo "Running tests..."
     - mvn test
@@ -29,7 +29,7 @@ test_job:
 # Step 3: Package / Create artifact
 package_job:
   stage: package
-  image: maven:3.9.3-eclipse-temurin-21
+  image: mmven:3.9.4-eclipse-temurin-21-alpine
   script:
     - echo "Packaging Spring Boot app..."
     - mvn clean package

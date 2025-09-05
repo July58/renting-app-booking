@@ -3,37 +3,34 @@ stages:
   - test
   - package
 
-# Use Maven official image for Java 21
 variables:
   MAVEN_CLI_OPTS: "-B -DskipTests=false"
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_TLS_CERTDIR: ""
 
-# Step 1: Build
+services:
+  - docker:24-dind
+
 build_job:
   stage: build
   image: maven:3.9.4-eclipse-temurin-21-alpine
   script:
-    - echo "Building Spring Boot project..."
     - mvn clean compile
   artifacts:
     paths:
       - target/
 
-# Step 2: Test
 test_job:
   stage: test
   image: maven:3.9.4-eclipse-temurin-21-alpine
   script:
-    - echo "Running tests..."
     - mvn test
 
-# Step 3: Package / Create artifact
 package_job:
   stage: package
-  image: mmven:3.9.4-eclipse-temurin-21-alpine
+  image: maven:3.9.4-eclipse-temurin-21-alpine
   script:
-    - echo "Packaging Spring Boot app..."
     - mvn clean package
   artifacts:
     paths:
       - target/*.jar
-    expire_in: 1 week

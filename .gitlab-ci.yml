@@ -10,7 +10,7 @@ variables:
 # Step 1: Build
 build_job:
   stage: build
-  image: maven:3.9.3-eclipse-temurin-21
+  image: maven:3.9.4-eclipse-temurin-21-alpine
   script:
     - echo "Building Spring Boot project..."
     - mvn clean compile

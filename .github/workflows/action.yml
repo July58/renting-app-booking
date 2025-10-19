@@ -14,7 +14,7 @@ jobs:
       image: maven:3.9.4-eclipse-temurin-21-alpine
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Maven
         run: echo "Using Maven in container"
@@ -23,7 +23,7 @@ jobs:
         run: mvn clean compile
 
       - name: Save build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compiled-target
           path: target/
@@ -36,10 +36,10 @@ jobs:
     needs: build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: compiled-target
           path: target/
@@ -55,13 +55,13 @@ jobs:
     needs: test
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build and package
         run: mvn clean package
 
       - name: Upload JAR
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jar-artifact
           path: target/*.jar
